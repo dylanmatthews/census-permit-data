@@ -1,0 +1,14 @@
+# Raw data files (too large for git)
+historical_data/raw/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+extraction_log.txt
+
+# OS files
+.DS_Store
