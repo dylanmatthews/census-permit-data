@@ -2,6 +2,27 @@
 
 Historical building permit data (2000-2024) for 1,061 places across six major U.S. metropolitan areas.
 
+## 🌐 Interactive Web App
+
+**Try the live app**: Explore the data interactively with our Streamlit web app!
+
+### Run Locally
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the app
+streamlit run app.py
+```
+
+The app will open in your browser at `http://localhost:8501`
+
+### Features
+- **Compare Places**: View up to 5 municipalities side-by-side
+- **Compare Unit Types**: Analyze different housing types for a single place
+- **Interactive Charts**: Hover for details, zoom, and pan
+- **Search**: Quickly find any of the 1,061 places
+
 ## Quick Start
 
 ### Main Dataset
@@ -34,6 +55,7 @@ historical_data/processed/six_metros_2000_2024_combined.csv
 - `historical_data/processed/six_metros_YYYY.csv` - Individual year files
 
 ### Scripts
+- **`app.py`** - Interactive Streamlit web app
 - `download_all_years.sh` - Download Census data
 - `extract_historical.py` - Extract and combine data
 - `analyze_historical.py` - Generate summary statistics
