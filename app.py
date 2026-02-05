@@ -28,6 +28,20 @@ UNIT_TYPE_COLUMNS: Dict[str, str] = {
     '5+ Units (Apartments)': 'Units.3'
 }
 
+# State FIPS code to abbreviation mapping
+STATE_CODES: Dict[str, str] = {
+    '6': 'CA',
+    '11': 'DC',
+    '24': 'MD',
+    '25': 'MA',
+    '33': 'NH',
+    '34': 'NJ',
+    '36': 'NY',
+    '51': 'VA',
+    '53': 'WA',
+    '54': 'WV'
+}
+
 @st.cache_data
 def load_data() -> pd.DataFrame:
     """Load and prepare the census permit data."""
@@ -47,6 +61,11 @@ def load_data() -> pd.DataFrame:
     # Clean place names (remove extra whitespace)
     df['Name'] = df['Name'].str.strip()
 
+    # Add state abbreviations and create display names
+    df['Code'] = df['Code'].astype(str)
+    df['State'] = df['Code'].map(STATE_CODES)
+    df['Display_Name'] = df['Name'] + ', ' + df['State']
+
     return df
 
 def plot_multiple_places(df: pd.DataFrame, places: List[str], unit_type: str) -> go.Figure:
@@ -55,7 +74,7 @@ def plot_multiple_places(df: pd.DataFrame, places: List[str], unit_type: str) ->
 
     Args:
         df: The full dataset
-        places: List of place names to compare
+        places: List of display names (e.g., "Place, ST") to compare
         unit_type: The type of units to display (key from UNIT_TYPE_COLUMNS)
 
     Returns:
@@ -63,21 +82,21 @@ def plot_multiple_places(df: pd.DataFrame, places: List[str], unit_type: str) ->
     """
     column = UNIT_TYPE_COLUMNS[unit_type]
 
-    # Filter data for selected places
-    filtered_df = df[df['Name'].isin(places)].copy()
+    # Filter data for selected places (using Display_Name)
+    filtered_df = df[df['Display_Name'].isin(places)].copy()
 
     # Create figure
     fig = px.line(
         filtered_df,
         x='Year',
         y=column,
-        color='Name',
+        color='Display_Name',
         markers=True,
         title=f'{unit_type} Permits by Place (2000-2024)',
         labels={
             column: 'Number of Units',
             'Year': 'Year',
-            'Name': 'Place'
+            'Display_Name': 'Place'
         }
     )
 
@@ -109,14 +128,17 @@ def plot_multiple_unit_types(df: pd.DataFrame, place: str, unit_types: List[str]
 
     Args:
         df: The full dataset
-        place: Place name to analyze
+        place: Display name (e.g., "Place, ST") to analyze
         unit_types: List of unit types to display (keys from UNIT_TYPE_COLUMNS)
 
     Returns:
         Plotly figure object
     """
-    # Filter data for selected place
-    filtered_df = df[df['Name'] == place].copy()
+    # Filter data for selected place (using Display_Name)
+    filtered_df = df[df['Display_Name'] == place].copy()
+
+    # Get the actual place name for the title
+    place_name = filtered_df['Display_Name'].iloc[0] if len(filtered_df) > 0 else place
 
     # Create figure
     fig = go.Figure()
@@ -134,7 +156,7 @@ def plot_multiple_unit_types(df: pd.DataFrame, place: str, unit_types: List[str]
 
     # Customize layout
     fig.update_layout(
-        title=f'Building Permits in {place} by Unit Type (2000-2024)',
+        title=f'Building Permits in {place_name} by Unit Type (2000-2024)',
         xaxis=dict(
             title='Year',
             tickmode='linear',
@@ -169,8 +191,8 @@ def main():
     with st.spinner("Loading data..."):
         df = load_data()
 
-    # Get sorted list of unique place names
-    places = sorted(df['Name'].unique().tolist())
+    # Get sorted list of unique display names (Place, STATE)
+    places = sorted(df['Display_Name'].unique().tolist())
 
     # Sidebar
     st.sidebar.header("Settings")
@@ -212,7 +234,7 @@ def main():
 
             # Show summary statistics
             with st.expander("📊 Summary Statistics"):
-                summary_df = df[df['Name'].isin(selected_places)].groupby('Name')[UNIT_TYPE_COLUMNS[unit_type]].agg([
+                summary_df = df[df['Display_Name'].isin(selected_places)].groupby('Display_Name')[UNIT_TYPE_COLUMNS[unit_type]].agg([
                     ('Total 2000-2024', 'sum'),
                     ('Average per Year', 'mean'),
                     ('Peak Year Value', 'max'),
@@ -262,7 +284,7 @@ def main():
 
             # Show summary statistics
             with st.expander("📊 Summary Statistics"):
-                place_df = df[df['Name'] == selected_place].copy()
+                place_df = df[df['Display_Name'] == selected_place].copy()
                 summary_data = {}
                 for unit_type in selected_unit_types:
                     col = UNIT_TYPE_COLUMNS[unit_type]
